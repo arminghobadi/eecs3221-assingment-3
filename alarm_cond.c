@@ -26,21 +26,13 @@
 typedef struct alarm_tag
 {
   struct alarm_tag *link;
+  char type;
   int seconds;
   int messageType;
   int messageNumber;
   time_t time; /* seconds from EPOCH */
   char message[128];
 } alarm_t;
-
-typedef struct type_a
-{
-  int seconds;
-  time_t time;
-  int message_type;
-  int message_number;
-  char message[128];
-} type_a;
 
 pthread_mutex_t alarm_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t alarm_cond = PTHREAD_COND_INITIALIZER;
@@ -177,224 +169,74 @@ void *alarm_thread(void *arg)
   }
 }
 
-void isValidTypeA(char line[])
-{
-  //  typedef struct type_a {
-  //    int seconds;
-  //    int message_type;
-  //    int message_number;
-  //    char message[128];
-  //  } type_a ;
-  // 5 Message(2, 13) Visit Grandma on way back home
-  bool haveSeenSeconds = false;
-  int seconds;
-  bool haveSeenMessageString = false;
-  bool haveSeenOpenParanthesis = false;
-  bool haveSeenMessageType = false;
-  int messageType;
-  bool haveSeenComma = false;
-  bool haveSeenMessageNumber = false;
-  int messageNumber;
-  bool haveSeenCloseParanthesis = false;
-  bool haveSeenMessage = false;
-  char message[128];
-  char error[200];
-
-  int lastWhiteSpaceIndex = 0;
-
-  for (int i = 0; i < strlen(line); i++){
-    if (!haveSeenSeconds && line[i] == ' '){
-      
-      int res = 0;
-      for (int j = lastWhiteSpaceIndex; j < i; j++){
-        if (isdigit(line[j])){
-          res = (res * 10) + (int)line[j] - (int)'0';
-        }
-      }
-      seconds = res;
-      printf("seconds is %d\n", seconds);
-      lastWhiteSpaceIndex = i;
-      haveSeenSeconds = true;
-    }
-    if (line[i] == ' ' && haveSeenSeconds && !haveSeenMessageString){
-      lastWhiteSpaceIndex = i;
-      if (line[i+1] == 'M' && 
-        line[i+2] == 'e' && 
-        line[i+3] == 's' && 
-        line[i+4] == 's' &&
-        line[i+5] == 'a' &&
-        line[i+6] == 'g' &&
-        line[i+7] == 'e'){
-          haveSeenMessageString = true;
-          printf("saw message string\n");
-          i +=6;
-      }
-    }
-    if (haveSeenSeconds && haveSeenMessageString && !haveSeenOpenParanthesis){
-      if (line[i] != '('){
-        continue;
-      }
-      haveSeenOpenParanthesis = true;
-      printf("saw ( \n");
-    }
-    if (haveSeenSeconds && haveSeenMessageString && haveSeenOpenParanthesis && !haveSeenMessageType) {
-      int res = 0;
-      if ( isdigit( line[i] ) ){
-        for (int j = i ; j<strlen(line) ; j++){ // will perform a manual break in this for loop
-          res = (res * 10) + (int)line[j] - (int)'0';
-          if (!isdigit(line[j+1])){
-            haveSeenMessageType = true;
-            messageType = res;
-            printf("message type is %d\n", messageType);
-            break;
-          }
-        }
-      }
-    }
-
-    if (haveSeenSeconds && haveSeenMessageString && haveSeenOpenParanthesis && haveSeenMessageType && !haveSeenComma){
-      if (line[i]==','){
-        haveSeenComma = true;
-      }
-    }
-    if (haveSeenSeconds && haveSeenMessageString && haveSeenOpenParanthesis && haveSeenMessageType && haveSeenComma && !haveSeenMessageNumber){
-      int res = 0;
-      if ( isdigit( line[i] ) ){
-        for (int j = i ; j<strlen(line) ; j++){ // will perform a manual break in this for loop
-          res = (res * 10) + (int)line[j] - (int)'0';
-          if (!isdigit(line[j+1])){
-            haveSeenMessageNumber = true;
-            messageNumber = res;
-            printf("message number is %d\n", messageNumber);
-            break;
-          }
-        }
-      }
-    }
-
-    if (haveSeenSeconds && haveSeenMessageString && haveSeenOpenParanthesis && haveSeenMessageType && haveSeenComma && haveSeenMessageNumber && !haveSeenCloseParanthesis){
-      if (line[i]==')'){
-        haveSeenCloseParanthesis = true;
-      }
-      continue;
-    }
-    if (haveSeenSeconds && haveSeenMessageString && haveSeenOpenParanthesis && haveSeenMessageType && haveSeenComma && haveSeenMessageNumber && haveSeenCloseParanthesis && !haveSeenMessage){
-      if (line[i] == ' '){
-        continue;
-      }
-      for( int j = 0 ; (j < 128 &&  i < strlen(line)) ; j++) {
-        // TODO: there might be a problem here!
-        // printf("i is %d line[i] is %c and current message[j] is %c \n",i, line[i], message[j]);
-        message[j] = line[i];
-        i++;
-        
-      }
-      printf(" message is %s\n", message);
-      break;
-    }
-
-  }
-  type_a newAlarm = { seconds, messageType, messageNumber, *message };
-  printf("my struct is %s %d\n", &newAlarm.message, newAlarm.seconds);
-}
-
-void seperateBySpace(char string[])
-{
-  int lastWhiteSpaceIndex = 0;
-  int lastResultIndex = 0;
-  char result[128];
-  for (int i = 0; i < strlen(string); i++)
-  {
-    if (string[i] == ' ')
-    {
-      int res = 0;
-
-      for (int j = lastWhiteSpaceIndex; j < i; j++)
-      {
-        if (isdigit(string[j]))
-        {
-          res = (res * 10) + (int)string[j] - (int)'0';
-        }
-      }
-      printf("int is %d\n", res);
-      lastWhiteSpaceIndex = i;
-    }
-  }
-}
-
-void isValidTypeB(char line[]){
-
-}
-
 char typeFinder(char line[])
 {
   if (isdigit(line[0]))
   {
-    isValidTypeA(line);
+    // isValidTypeA(line);
     return 'A';
   }
   else if (
-    line[0] == 'C' &&
-    line[1] == 'r' &&
-    line[2] == 'e' &&
-    line[3] == 'a' &&
-    line[4] == 't' &&
-    line[5] == 'e' &&
-    line[6] == '_' &&
-    line[7] == 'T' &&
-    line[8] == 'h' &&
-    line[9] == 'r' &&
-    line[10] == 'e' &&
-    line[11] == 'a' &&
-    line[12] == 'd'
-  ){
+      line[0] == 'C' &&
+      line[1] == 'r' &&
+      line[2] == 'e' &&
+      line[3] == 'a' &&
+      line[4] == 't' &&
+      line[5] == 'e' &&
+      line[6] == '_' &&
+      line[7] == 'T' &&
+      line[8] == 'h' &&
+      line[9] == 'r' &&
+      line[10] == 'e' &&
+      line[11] == 'a' &&
+      line[12] == 'd')
+  {
     return 'B';
   }
   else if (
-    line[0] == 'C' &&
-    line[1] == 'a' &&
-    line[2] == 'n' &&
-    line[3] == 'c' &&
-    line[4] == 'e' &&
-    line[5] == 'l'
-  ){
+      line[0] == 'C' &&
+      line[1] == 'a' &&
+      line[2] == 'n' &&
+      line[3] == 'c' &&
+      line[4] == 'e' &&
+      line[5] == 'l')
+  {
     return 'C';
   }
   else if (
-    line[0] == 'P' &&
-    line[1] == 'a' &&
-    line[2] == 'u' &&
-    line[3] == 's' &&
-    line[4] == 'e' &&
-    line[5] == '_' &&
-    line[6] == 'T' &&
-    line[7] == 'h' &&
-    line[8] == 'r' &&
-    line[9] == 'e' &&
-    line[10] == 'a' &&
-    line[11] == 'd'
-  ){
+      line[0] == 'P' &&
+      line[1] == 'a' &&
+      line[2] == 'u' &&
+      line[3] == 's' &&
+      line[4] == 'e' &&
+      line[5] == '_' &&
+      line[6] == 'T' &&
+      line[7] == 'h' &&
+      line[8] == 'r' &&
+      line[9] == 'e' &&
+      line[10] == 'a' &&
+      line[11] == 'd')
+  {
     return 'D';
   }
   else if (
-    line[0] == 'R' &&
-    line[1] == 'e' &&
-    line[2] == 's' &&
-    line[3] == 'u' &&
-    line[4] == 'm' &&
-    line[5] == 'e' &&
-    line[6] == '_' &&
-    line[7] == 'T' &&
-    line[8] == 'h' &&
-    line[9] == 'r' &&
-    line[10] == 'e' &&
-    line[11] == 'a' &&
-    line[12] == 'd'
-  ){
+      line[0] == 'R' &&
+      line[1] == 'e' &&
+      line[2] == 's' &&
+      line[3] == 'u' &&
+      line[4] == 'm' &&
+      line[5] == 'e' &&
+      line[6] == '_' &&
+      line[7] == 'T' &&
+      line[8] == 'h' &&
+      line[9] == 'r' &&
+      line[10] == 'e' &&
+      line[11] == 'a' &&
+      line[12] == 'd')
+  {
     return 'E';
   }
   return 'F';
-
 }
 
 int main(int argc, char *argv[])
@@ -403,7 +245,6 @@ int main(int argc, char *argv[])
   char line[128];
   alarm_t *alarm;
   pthread_t thread;
-  isValidTypeA("armin:");
 
   status = pthread_create(
       &thread, NULL, alarm_thread, NULL);
@@ -416,11 +257,44 @@ int main(int argc, char *argv[])
       exit(0);
     if (strlen(line) <= 1)
       continue;
-    alarm = (alarm_t *)malloc(sizeof(alarm_t));
-    if (alarm == NULL)
-      errno_abort("Allocate alarm");
-    printf(" the type is %c\n",typeFinder(line));
-    seperateBySpace(line);
+
+    int message_type;
+
+    // seperateBySpace(line);
+    switch (typeFinder(line))
+    {
+    case 'A':
+      alarm = (alarm_t *)malloc(sizeof(alarm_t));
+      if (alarm == NULL)
+        errno_abort("Allocate alarm");
+      else if (sscanf(line, "%d Message(%d, %d) %128[^\n]", &alarm->seconds, &alarm->messageType, &alarm->messageNumber, alarm->message) < 4)
+      {
+        fprintf(stderr, "Bad command\n");
+        free(alarm);
+      }
+      else
+      {
+        alarm->type = 'A';
+        status = pthread_mutex_lock(&alarm_mutex);
+        if (status != 0)
+          err_abort(status, "Lock mutex");
+        alarm->time = time(NULL) + alarm->seconds;
+        alarm_insert(alarm);
+        status = pthread_mutex_unlock(&alarm_mutex);
+        if (status != 0)
+          err_abort(status, "Unlock mutex");
+      }
+      break;
+    case 'B':
+      if (sscanf(line, "Create_Thread: MessageType(%d)", &message_type) < 1)
+      {
+      }
+      printf("case b\n");
+      break;
+    default:
+      printf("bad command\n");
+      break;
+    }
 
     //    /*
     //     * Parse input line into seconds (%d) and a message
