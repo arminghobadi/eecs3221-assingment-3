@@ -27,13 +27,16 @@ typedef struct alarm_tag
 {
   struct alarm_tag *link;
   int seconds;
+  int messageType;
+  int messageNumber;
   time_t time; /* seconds from EPOCH */
-  char message[64];
+  char message[128];
 } alarm_t;
 
 typedef struct type_a
 {
   int seconds;
+  time_t time;
   int message_type;
   int message_number;
   char message[128];
@@ -319,13 +322,79 @@ void seperateBySpace(char string[])
   }
 }
 
-void typeFinder(char line[])
+void isValidTypeB(char line[]){
+
+}
+
+char typeFinder(char line[])
 {
   if (isdigit(line[0]))
   {
-    printf(line, "%s");
+    isValidTypeA(line);
+    return 'A';
   }
-  isValidTypeA(line);
+  else if (
+    line[0] == 'C' &&
+    line[1] == 'r' &&
+    line[2] == 'e' &&
+    line[3] == 'a' &&
+    line[4] == 't' &&
+    line[5] == 'e' &&
+    line[6] == '_' &&
+    line[7] == 'T' &&
+    line[8] == 'h' &&
+    line[9] == 'r' &&
+    line[10] == 'e' &&
+    line[11] == 'a' &&
+    line[12] == 'd'
+  ){
+    return 'B';
+  }
+  else if (
+    line[0] == 'C' &&
+    line[1] == 'a' &&
+    line[2] == 'n' &&
+    line[3] == 'c' &&
+    line[4] == 'e' &&
+    line[5] == 'l'
+  ){
+    return 'C';
+  }
+  else if (
+    line[0] == 'P' &&
+    line[1] == 'a' &&
+    line[2] == 'u' &&
+    line[3] == 's' &&
+    line[4] == 'e' &&
+    line[5] == '_' &&
+    line[6] == 'T' &&
+    line[7] == 'h' &&
+    line[8] == 'r' &&
+    line[9] == 'e' &&
+    line[10] == 'a' &&
+    line[11] == 'd'
+  ){
+    return 'D';
+  }
+  else if (
+    line[0] == 'R' &&
+    line[1] == 'e' &&
+    line[2] == 's' &&
+    line[3] == 'u' &&
+    line[4] == 'm' &&
+    line[5] == 'e' &&
+    line[6] == '_' &&
+    line[7] == 'T' &&
+    line[8] == 'h' &&
+    line[9] == 'r' &&
+    line[10] == 'e' &&
+    line[11] == 'a' &&
+    line[12] == 'd'
+  ){
+    return 'E';
+  }
+  return 'F';
+
 }
 
 int main(int argc, char *argv[])
@@ -350,7 +419,7 @@ int main(int argc, char *argv[])
     alarm = (alarm_t *)malloc(sizeof(alarm_t));
     if (alarm == NULL)
       errno_abort("Allocate alarm");
-    typeFinder(line);
+    printf(" the type is %c\n",typeFinder(line));
     seperateBySpace(line);
 
     //    /*
