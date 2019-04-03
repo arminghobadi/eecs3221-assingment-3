@@ -57,10 +57,17 @@ void alarm_insert(alarm_t *alarm)
   next = *last;
   while (next != NULL)
   {
+    if (next->type == 'A' && next->messageNumber == alarm->messageNumber){
+      printf("Type A Replacement Alarm Request With Message Number %d Inserted Into Alarm List at %lld: %c\n", alarm->messageNumber, (long long) time(NULL), alarm->type);
+      alarm->link = next;
+      next = alarm;
+      break;
+    }
     if (next->time >= alarm->time)
     {
       alarm->link = next;
       *last = alarm;
+      printf("Type A Alarm Request With Message Number %d Inserted Into Alarm List at %lld: %c\n", alarm->messageNumber, (long long) time(NULL), alarm->type);
       break;
     }
     last = &next->link;
@@ -259,12 +266,12 @@ int main(int argc, char *argv[])
       continue;
 
     int message_type;
-
-    // seperateBySpace(line);
+    alarm = (alarm_t *)malloc(sizeof(alarm_t));
+ 
     switch (typeFinder(line))
     {
     case 'A':
-      alarm = (alarm_t *)malloc(sizeof(alarm_t));
+      
       if (alarm == NULL)
         errno_abort("Allocate alarm");
       else if (sscanf(line, "%d Message(%d, %d) %128[^\n]", &alarm->seconds, &alarm->messageType, &alarm->messageNumber, alarm->message) < 4)
@@ -286,10 +293,167 @@ int main(int argc, char *argv[])
       }
       break;
     case 'B':
-      if (sscanf(line, "Create_Thread: MessageType(%d)", &message_type) < 1)
+      if (sscanf(line, "Create_Thread: MessageType(%d)", &alarm->messageType) < 1)
       {
+        alarm->type = 'B';
+        alarm_t **last, *next;
+        bool shouldProceed = true;
+
+        last = &alarm_list;
+        next = *last;
+        while(next != NULL){
+          if ( next->type == 'A' && next->messageType != alarm->messageType){
+            printf("Type B Alarm Request Error: No Alarm Request With Message Type %d!", alarm->messageType);
+            shouldProceed = false;
+            break;
+          }
+        }
+        last = &alarm_list;
+        next = *last;
+        while(next != NULL){
+          if ( next->type == 'B' && next->messageType == alarm->messageType){
+            printf("Error: More Than One Type B Alarm Request With Message Type %d!", alarm->messageType);
+            shouldProceed = false;
+            break;
+          }
+        }
+        if (shouldProceed){
+          status = pthread_mutex_lock(&alarm_mutex);
+          if (status != 0)
+            err_abort(status, "Lock mutex");
+          alarm->time = time(NULL) + alarm->seconds;
+          alarm_insert(alarm);
+          status = pthread_mutex_unlock(&alarm_mutex);
+          if (status != 0)
+            err_abort(status, "Unlock mutex");
+        }
+        else{
+          free(alarm);
+        }
       }
-      printf("case b\n");
+      break;
+    case 'C':
+      if (sscanf(line, "Cancel: Message(%d)", &alarm->messageNumber) < 1)
+      {
+        alarm->type = 'C';
+        alarm_t **last, *next;
+        bool shouldProceed = true;
+
+        last = &alarm_list;
+        next = *last;
+        while(next != NULL){
+          if ( next->type == 'A' && next->messageNumber != alarm->messageNumber){
+            printf("Error: No Alarm Request With Message Number %d to Cancel!", alarm->messageNumber);
+            shouldProceed = false;
+            break;
+          }
+        }
+        last = &alarm_list;
+        next = *last;
+        while(next != NULL){
+          if ( next->type == 'B' && next->messageNumber == alarm->messageNumber){
+            printf("Error: More Than One Request to Cancel Alarm Request With Message Number %d!", alarm->messageNumber);
+            shouldProceed = false;
+            break;
+          }
+        }
+        if (shouldProceed){
+          status = pthread_mutex_lock(&alarm_mutex);
+          if (status != 0)
+            err_abort(status, "Lock mutex");
+          alarm->time = time(NULL) + alarm->seconds;
+          alarm_insert(alarm);
+          status = pthread_mutex_unlock(&alarm_mutex);
+          if (status != 0)
+            err_abort(status, "Unlock mutex");
+          printf("Type C Cancel Alarm Request With Message Number %d Inserted Into Alarm List at %lld: %c", alarm->messageNumber, (long long)time(NULL), alarm->type);
+        }
+        else{
+          free(alarm);
+        }
+      }
+      break;
+    case 'D':
+      if (sscanf(line, "Pause_Thread: MessageType(%d)", &alarm->messageType) < 1)
+      {
+        alarm->type = 'D';
+        alarm_t **last, *next;
+        bool shouldProceed = true;
+
+        last = &alarm_list;
+        next = *last;
+        while(next != NULL){
+          if ( next->type == 'A' && next->messageType != alarm->messageType){
+            printf("Type D Alarm Request Error: No Alarm Request With Message Type %d!", alarm->messageType);
+            shouldProceed = false;
+            break;
+          }
+        }
+        last = &alarm_list;
+        next = *last;
+        while(next != NULL){
+          if ( next->type == 'B' && next->messageNumber == alarm->messageNumber){
+            printf("Error: More Than One Type D Alarm Request With Message Type %d!", alarm->messageType);
+            shouldProceed = false;
+            break;
+          }
+        }
+        if (shouldProceed){
+          status = pthread_mutex_lock(&alarm_mutex);
+          if (status != 0)
+            err_abort(status, "Lock mutex");
+          alarm->time = time(NULL) + alarm->seconds;
+          alarm_insert(alarm);
+          status = pthread_mutex_unlock(&alarm_mutex);
+          if (status != 0)
+            err_abort(status, "Unlock mutex");
+          printf("Type D Pause Thread Alarm Request For Message Type %d Inserted Into Alarm List at %lld!", alarm->messageType, (long long)time(NULL));
+        }
+        else{
+          free(alarm);
+        }
+      }
+      break;
+    case 'E':
+      if (sscanf(line, "Resume_Thread: MessageType(%d)", &alarm->messageType) < 1)
+      {
+        alarm->type = 'E';
+        alarm_t **last, *next;
+        bool shouldProceed = true;
+
+        last = &alarm_list;
+        next = *last;
+        while(next != NULL){
+          if ( next->type == 'D' && next->messageType != alarm->messageType){
+            printf("Type E Alarm Request Error: No Type D Pause Alarm Request With Message Type %d!", alarm->messageType);
+            shouldProceed = false;
+            break;
+          }
+        }
+        last = &alarm_list;
+        next = *last;
+        while(next != NULL){
+          if ( next->type == 'E' && next->messageNumber == alarm->messageNumber){
+            printf("Error: More Than One Type E Alarm Request With Message Type %d!", alarm->messageType);
+            shouldProceed = false;
+            break;
+          }
+        }
+        if (shouldProceed){
+          status = pthread_mutex_lock(&alarm_mutex);
+          if (status != 0)
+            err_abort(status, "Lock mutex");
+          alarm->time = time(NULL) + alarm->seconds;
+          alarm_insert(alarm);
+          status = pthread_mutex_unlock(&alarm_mutex);
+          if (status != 0)
+            err_abort(status, "Unlock mutex");
+          printf("Type E Resume Thread Alarm Request For Message Type %d Inserted Into Alarm List at %lld!", alarm->messageType, (long long)time(NULL));
+        }
+        else{
+          free(alarm);
+        }
+      }
       break;
     default:
       printf("bad command\n");
